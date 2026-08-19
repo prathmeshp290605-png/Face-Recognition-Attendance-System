@@ -1,119 +1,14 @@
-import cv2
 import os
-import numpy as np
+import streamlit as st
 
-# Get project folder
+# BASE DIR
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+trainer_path = os.path.join(BASE_DIR, "trainer.yml")
 
-# Haar Cascade file
-cascade_path = os.path.join(
-    BASE_DIR,
-    "haarcascade_frontalface_default.xml"
-)
+# Check if file exists
+if not os.path.exists(trainer_path):
+    st.error("trainer.yml file GitHub var sapdat nahiye. Krupaya push kara.")
+    st.stop()
 
-# Load Haar Cascade
-detector = cv2.CascadeClassifier(cascade_path)
-
-if detector.empty():
-    print("ERROR: Haar Cascade file could not be loaded.")
-    print("Make sure haarcascade_frontalface_default.xml is in the project folder.")
-    exit()
-
-print("Haar Cascade loaded successfully!")
-
-# Create face recognizer
-recognizer = cv2.face.LBPHFaceRecognizer_create()
-
-faces = []
-ids = []
-
-# Dataset folder
-dataset_path = os.path.join(BASE_DIR, "dataset")
-
-if not os.path.exists(dataset_path):
-    print("ERROR: dataset folder does not exist.")
-    exit()
-
-# Read student folders
-for student_id in os.listdir(dataset_path):
-
-    student_folder = os.path.join(
-        dataset_path,
-        student_id
-    )
-
-    if not os.path.isdir(student_folder):
-        continue
-
-    print("Reading Student ID:", student_id)
-
-    # Read images
-    for image_name in os.listdir(student_folder):
-
-        image_path = os.path.join(
-            student_folder,
-            image_name
-        )
-
-        image = cv2.imread(
-            image_path,
-            cv2.IMREAD_GRAYSCALE
-        )
-
-        if image is None:
-            continue
-
-        # Detect faces
-        detected_faces = detector.detectMultiScale(
-            image,
-            scaleFactor=1.1,
-            minNeighbors=5
-        )
-
-        for (x, y, w, h) in detected_faces:
-
-            face = image[y:y+h, x:x+w]
-
-            faces.append(face)
-            ids.append(int(student_id))
-
-print("\nTraining faces...")
-
-# Check training data
-if len(faces) == 0:
-    print("ERROR: No faces found in dataset.")
-    print("Run register.py again.")
-    exit()
-
-# Train model
-recognizer.train(
-    faces,
-    np.array(ids)
-)
-
-# Create trainer folder
-trainer_path = os.path.join(
-    BASE_DIR,
-    "trainer"
-)
-
-os.makedirs(
-    trainer_path,
-    exist_ok=True
-)
-
-# IMPORTANT: Define model path
-model_path = os.path.join(
-    trainer_path,
-    "trainer.yml"
-)
-
-# Save trained model
-recognizer.write(model_path)
-
-print("\n====================================")
-print("Training completed successfully!")
-print("Total face samples:", len(faces))
-print("Model saved successfully!")
-print("Location:", model_path)
-print("====================================")
+# Load model
+recognizer.read(trainer_path)
